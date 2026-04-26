@@ -5,21 +5,19 @@ variables:
   catalog:
     default: etl_medallion
   storage_account:
-    default: "oscaretlstorage"
+    description: "Azure Storage Account name (set via BUNDLE_VAR_storage_account or --var)"
   container_raw:
     default: raw
+  notification_email:
+    description: "Email for job failure notifications (set via BUNDLE_VAR_notification_email or --var)"
 
 targets:
   dev:
     mode: development
     default: true
-    workspace:
-      host: https://adb-7405604870430694.14.azuredatabricks.net
 
   prod:
     mode: production
-    workspace:
-      host: https://adb-7405604870430694.14.azuredatabricks.net
 
 resources:
   jobs:
@@ -54,7 +52,7 @@ resources:
 
       email_notifications:
         on_failure:
-          - oscarperez_11@hotmail.com
+          - ${var.notification_email}
 
       schedule:
         quartz_cron_expression: "0 0 6 * * ?"   # Todos los días a las 6 AM

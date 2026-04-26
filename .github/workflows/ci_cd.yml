@@ -80,8 +80,10 @@ jobs:
 
       - name: Validate bundle (dev)
         env:
-          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST:           ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN:          ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_storage_account: ${{ secrets.STORAGE_ACCOUNT }}
+          BUNDLE_VAR_notification_email: ${{ secrets.NOTIFICATION_EMAIL }}
         run: databricks bundle validate --target dev
 
   # ─────────────────────────────────────────────
@@ -101,18 +103,21 @@ jobs:
 
       - name: Deploy bundle to dev
         env:
-          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST:           ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN:          ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_storage_account: ${{ secrets.STORAGE_ACCOUNT }}
+          BUNDLE_VAR_notification_email: ${{ secrets.NOTIFICATION_EMAIL }}
         run: databricks bundle deploy --target dev
 
       - name: Run ETL pipeline in dev
         env:
-          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST:           ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN:          ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_storage_account: ${{ secrets.STORAGE_ACCOUNT }}
+          BUNDLE_VAR_notification_email: ${{ secrets.NOTIFICATION_EMAIL }}
         run: |
           databricks bundle run etl_medallion_pipeline \
             --target dev \
-            --var="storage_account=${{ secrets.STORAGE_ACCOUNT }}" \
             --var="catalog=etl_medallion_dev"
 
   # ─────────────────────────────────────────────
@@ -132,18 +137,21 @@ jobs:
 
       - name: Deploy bundle to prod
         env:
-          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST:           ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN:          ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_storage_account: ${{ secrets.STORAGE_ACCOUNT }}
+          BUNDLE_VAR_notification_email: ${{ secrets.NOTIFICATION_EMAIL }}
         run: databricks bundle deploy --target prod
 
       - name: Run ETL pipeline in prod
         env:
-          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST:           ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN:          ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_storage_account: ${{ secrets.STORAGE_ACCOUNT }}
+          BUNDLE_VAR_notification_email: ${{ secrets.NOTIFICATION_EMAIL }}
         run: |
           databricks bundle run etl_medallion_pipeline \
             --target prod \
-            --var="storage_account=${{ secrets.STORAGE_ACCOUNT }}" \
             --var="catalog=etl_medallion"
 
       - name: Notify success
