@@ -3,13 +3,13 @@
 import sys
 import os
 
-import pytest
-from pyspark.sql import SparkSession
-from pyspark.sql import types as T
-from pyspark.sql import functions as F
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from utils import clean_column_names, null_summary, add_audit_columns
+
+import pytest  # noqa: E402
+from pyspark.sql import SparkSession  # noqa: E402
+from pyspark.sql import types as T  # noqa: E402
+from pyspark.sql import functions as F  # noqa: E402
+from utils import clean_column_names, null_summary, add_audit_columns  # noqa: E402
 
 
 @pytest.fixture(scope="session")
@@ -55,7 +55,7 @@ class TestNullSummary:
         df = spark.createDataFrame(data, schema)
 
         result = null_summary(df).collect()[0]
-        assert result["sales"]  == 1
+        assert result["sales"] == 1
         assert result["profit"] == 1
 
     def test_no_nulls(self, spark):
@@ -88,7 +88,7 @@ class TestSilverBusinessRules:
             "profit_margin_pct",
             F.when(F.col("sales") > 0,
                    F.round((F.col("profit") / F.col("sales")) * 100, 2)
-            ).otherwise(F.lit(0.0))
+                   ).otherwise(F.lit(0.0))
         )
         row = result.collect()[0]
         assert row["profit_margin_pct"] == 0.0

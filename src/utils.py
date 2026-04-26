@@ -25,7 +25,7 @@ def add_audit_columns(df: DataFrame, layer: str) -> DataFrame:
 
 def configure_managed_identity(spark: SparkSession, storage_account: str) -> None:
     """Configura autenticación OAuth con Managed Identity para ADLS Gen2."""
-    base = f"fs.azure.account"
+    base = "fs.azure.account"
     fqdn = f"{storage_account}.dfs.core.windows.net"
 
     spark.conf.set(f"{base}.auth.type.{fqdn}", "OAuth")
