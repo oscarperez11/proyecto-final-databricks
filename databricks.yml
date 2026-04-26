@@ -1,0 +1,62 @@
+bundle:
+  name: etl_medallion
+
+variables:
+  catalog:
+    default: etl_medallion
+  storage_account:
+    default: "oscaretlstorage"
+  container_raw:
+    default: raw
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-7405604870430694.14.azuredatabricks.net
+
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-7405604870430694.14.azuredatabricks.net
+
+resources:
+  jobs:
+    etl_medallion_pipeline:
+      name: "ETL Medallion Pipeline"
+      description: "Pipeline completo Bronze -> Silver -> Gold"
+
+      tasks:
+        - task_key: bronze_ingest
+          notebook_task:
+            notebook_path: ./notebooks/01_bronze_ingest.py
+            base_parameters:
+              storage_account: ${var.storage_account}
+              catalog:         ${var.catalog}
+              container_raw:   ${var.container_raw}
+
+        - task_key: silver_transform
+          depends_on:
+            - task_key: bronze_ingest
+          notebook_task:
+            notebook_path: ./notebooks/02_silver_transform.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+        - task_key: gold_aggregate
+          depends_on:
+            - task_key: silver_transform
+          notebook_task:
+            notebook_path: ./notebooks/03_gold_aggregate.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+      email_notifications:
+        on_failure:
+          - oscarperez_11@hotmail.com
+
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"   # Todos los días a las 6 AM
+        timezone_id: "America/Guatemala"
+        pause_status: UNPAUSED

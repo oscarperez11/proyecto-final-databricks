@@ -1,0 +1,29 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Tests
+reports/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databricks
+.databricks/
+
+# macOS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.env

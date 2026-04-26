@@ -1,0 +1,6 @@
+pyspark==3.5.1
+delta-spark==3.1.0
+pytest==8.2.0
+flake8==7.0.0
+flake8-bugbear==24.2.6
+databricks-sdk>=0.28.0

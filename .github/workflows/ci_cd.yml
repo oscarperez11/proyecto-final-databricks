@@ -1,0 +1,151 @@
+name: ETL Medallion CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+  DATABRICKS_CLI_VERSION: "0.221.0"
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. LINT — Verifica estilo y calidad del código
+  # ─────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install lint dependencies
+        run: pip install flake8 flake8-bugbear
+
+      - name: Run flake8
+        run: |
+          flake8 src/ tests/ \
+            --max-line-length=120 \
+            --extend-ignore=E203,W503 \
+            --statistics
+
+  # ─────────────────────────────────────────────
+  # 2. TEST — Ejecuta unit tests con PySpark local
+  # ─────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short --junitxml=reports/test-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: reports/test-results.xml
+
+  # ─────────────────────────────────────────────
+  # 3. VALIDATE BUNDLE — Valida el asset bundle
+  # ─────────────────────────────────────────────
+  validate:
+    name: Validate Bundle
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate bundle (dev)
+        env:
+          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle validate --target dev
+
+  # ─────────────────────────────────────────────
+  # 4. DEPLOY DEV — Solo en push a develop
+  # ─────────────────────────────────────────────
+  deploy_dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Deploy bundle to dev
+        env:
+          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle deploy --target dev
+
+      - name: Run ETL pipeline in dev
+        env:
+          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle run etl_medallion_pipeline \
+            --target dev \
+            --var="storage_account=${{ secrets.STORAGE_ACCOUNT }}" \
+            --var="catalog=etl_medallion_dev"
+
+  # ─────────────────────────────────────────────
+  # 5. DEPLOY PROD — Solo en push a main
+  # ─────────────────────────────────────────────
+  deploy_prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Deploy bundle to prod
+        env:
+          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle deploy --target prod
+
+      - name: Run ETL pipeline in prod
+        env:
+          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle run etl_medallion_pipeline \
+            --target prod \
+            --var="storage_account=${{ secrets.STORAGE_ACCOUNT }}" \
+            --var="catalog=etl_medallion"
+
+      - name: Notify success
+        if: success()
+        run: echo "Pipeline produccion ejecutado exitosamente"
